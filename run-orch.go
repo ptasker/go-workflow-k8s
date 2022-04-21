@@ -118,7 +118,7 @@ func main() {
 
 	c := client.New(backend)
 
-	// Dummy primes data for workflow
+	// Dummy data for workflow
 	searchTerms := []string{"Winter", "Snow", "Hockey", "Maple Syrup"}
 
 	wf, err := c.CreateWorkflowInstance(ctx, client.WorkflowInstanceOptions{
