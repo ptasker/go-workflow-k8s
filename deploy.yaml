@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv-volume
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mysql
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: orch-go
+  labels:
+    app: orchestration
+spec:
+  containers:
+  - name: mysql
+    image: mysql/mysql-server:8.0
+    env:
+      - name: MYSQL_ROOT_PASSWORD
+        value: root
+      - name: MYSQL_ROOT_HOST
+        value: "%"
+      - name: MYSQL_DATABASE
+        value: simple
+    ports:
+    - containerPort: 3306
+      name: mysql
+    volumeMounts:
+    - name: mysql-persistent-storage
+      mountPath: /var/lib/mysql
+  - name: app
+    env:
+      - name: "CLIENT_ID"
+        valueFrom:
+          secretKeyRef:
+            name: twitter-keys
+            key: CLIENT_ID
+            optional: false
+      - name: "CLIENT_SECRET"
+        valueFrom:
+          secretKeyRef:
+            name: twitter-keys
+            key: CLIENT_SECRET
+            optional: false
+    image: run-orch-go
+    imagePullPolicy: Never
+  volumes:
+    - name: mysql-persistent-storage
+      persistentVolumeClaim:
+        claimName: mysql-pv-claim
